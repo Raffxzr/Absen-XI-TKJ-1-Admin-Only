@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, badge, csrf, month_nav %}
+{% block title %}{{ student['full_name'] }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ student['full_name'] }}</h1>
+    <p>No. absen {{ student['roll_no'] or '-' }}{% if student['nis'] %} · NIS {{ student['nis'] }}{% endif %} · <span class="badge {{ 'badge-ok' if student['is_active'] else 'badge-neutral' }}">{{ 'Siswa aktif' if student['is_active'] else 'Siswa nonaktif' }}</span></p></div>
+  <div class="actions">
+    <a class="btn btn-secondary" href="{{ url_for('admin.student_edit', student_id=student['id']) }}">{{ icon('edit', 16) }}Edit</a>
+    <a class="btn btn-secondary" href="{{ url_for('admin.student_detail', student_id=student['id'], bulan='%d-%02d' % (year, month), unduh='csv') }}">{{ icon('download', 16) }}CSV</a>
+    <a class="btn btn-secondary" href="{{ url_for('admin.student_detail', student_id=student['id'], bulan='%d-%02d' % (year, month), unduh='xlsx') }}">{{ icon('download', 16) }}Excel</a>
+  </div>
+</div>
+
+<div class="card-head"><h2>Rekap {{ label }}</h2>{{ month_nav(prev, next, label, 'admin.student_detail', {'student_id': student['id']}) }}</div>
+<div class="card">
+  <div class="tiles">{% for k in STATUS_ORDER %}<div class="tile {{ k|lower }}"><b>{{ summary.counts[k] }}</b><span>{{ STATUS_LABELS[k] }}</span></div>{% endfor %}</div>
+  <p class="muted small m-0">{{ summary.effective_days }} hari efektif{% if summary.pct is not none %} · kehadiran {{ summary.pct }}%{% endif %}{% if summary.belum %} · {{ summary.belum }} hari belum tercatat{% endif %}</p>
+</div>
+
+{% if history %}
+<div class="table-wrap mb-1">
+<table class="table table-stack">
+  <thead><tr><th>Tanggal</th><th>Status</th><th>Waktu &amp; Pencatat</th><th>Keterangan</th><th>Aksi</th></tr></thead>
+  <tbody>{% for r in history %}
+  <tr>
+    <td data-label="Tanggal">{{ r['att_date']|tgl }}</td>
+    <td data-label="Status">{{ badge(r['status']) }}{% if r['corrected'] %}<span class="tag">diubah</span>{% endif %}</td>
+    <td data-label="Waktu">{{ r['submitted_at']|jam }} WIB{% if r['by_name'] %}<span class="tag">{{ r['by_name'] }}</span>{% endif %}</td>
+    <td data-label="Keterangan">{{ r['note'] or '-' }}</td>
+    <td class="cell-actions"><a class="btn btn-secondary btn-sm" href="{{ url_for('admin.correct', siswa=student['id'], tanggal=r['att_date']) }}">{{ icon('edit', 14) }}Ubah</a></td>
+  </tr>{% endfor %}</tbody>
+</table></div>
+{% else %}
+<div class="card"><div class="empty"><strong>Belum ada presensi di {{ label }}</strong>Catatan akan muncul di sini setelah presensi dicatat oleh admin.</div></div>
+{% endif %}
+
+<section class="card" aria-labelledby="corr">
+  <h2 id="corr">Riwayat perubahan terbaru</h2>
+  {% if corrections %}
+  <ul class="history-list">
+    {% for c in corrections %}
+    <li><span class="when">{{ c['att_date']|tgl_pendek }}: {{ STATUS_LABELS[c['old_status']] if c['old_status'] else 'Belum ada' }} → {{ STATUS_LABELS[c['new_status']] }}</span>
+      <span class="muted small">{{ c['corrected_at']|waktu }}</span>
+      <span class="meta">Oleh {{ c['by_name'] }} · alasan: {{ c['reason'] }}</span></li>
+    {% endfor %}
+  </ul>
+  {% else %}<p class="muted m-0">Belum ada perubahan status untuk siswa ini.</p>{% endif %}
+</section>
+
+<div class="actions no-print">
+  <form class="inline" method="post" action="{{ url_for('admin.student_toggle', student_id=student['id']) }}"
+        data-confirm="{{ 'Nonaktifkan siswa ini? Riwayat presensi tetap tersimpan.' if student['is_active'] else 'Aktifkan kembali siswa ini?' }}"
+        data-confirm-label="{{ 'Nonaktifkan' if student['is_active'] else 'Aktifkan' }}">{{ csrf() }}
+    <input type="hidden" name="aktif" value="{{ 0 if student['is_active'] else 1 }}">
+    <button class="btn {{ 'btn-danger-outline' if student['is_active'] else 'btn-secondary' }}" type="submit">{{ icon('ban', 16) }}{{ 'Nonaktifkan siswa' if student['is_active'] else 'Aktifkan siswa' }}</button></form>
+</div>
+{% endblock %}

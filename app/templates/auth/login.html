@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, csrf, field %}
+{% block title %}Masuk Admin{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block main_class %}auth-wrap{% endblock %}
+{% block content %}
+<div class="auth-panel">
+  <div class="auth-brand">
+    <img class="brand-logo brand-logo-lg" src="{{ url_for('static', filename='img/logo-kelas.png') }}" alt="Logo Kelas {{ klass.name if klass else 'XI TKJ 1' }}" width="52" height="52">
+    <div><strong>Absensi Kelas {{ klass.name if klass else '' }}</strong><span class="sub">{{ klass.school_name if klass else '' }}</span></div>
+    <button class="btn btn-ghost btn-sm theme-toggle ml-auto" type="button" data-theme-toggle aria-label="Ganti ke tema gelap" aria-pressed="false" title="Ganti tema gelap/terang">
+      <span class="theme-icon-moon">{{ icon('moon', 16) }}</span>
+      <span class="theme-icon-sun">{{ icon('sun', 16) }}</span>
+      <span data-theme-label>Gelap</span>
+    </button>
+  </div>
+
+  <div class="auth-card">
+    <h1>Masuk Admin Kelas</h1>
+    <p class="muted small mb-1">Khusus pengurus yang ditunjuk (Ketua Kelas dan Sekretaris)</p>
+
+    {% if error %}
+    <div class="alert alert-error mb-1" role="alert">{{ icon('alert', 18) }}<span>{{ error }}</span></div>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('auth.login') }}" autocomplete="on">
+      {{ csrf() }}
+      {{ field('full_name', 'Nama akun admin', full_name, type='text', required=True, autocomplete='username', maxlength=100, autofocus=not error,
+               help='Masukkan akun admin yang terdaftar') }}
+      {{ field('password', 'Kata sandi', '', type='password', required=True, autocomplete='current-password', maxlength=200) }}
+      {{ field('admin_key', 'Kunci akses admin', '', type='password', required=True, autocomplete='off', maxlength=200) }}
+      <button class="btn btn-primary btn-lg" type="submit">{{ icon('log-in', 18) }}Masuk</button>
+    </form>
+
+    <p class="auth-note">{{ icon('info', 16) }}<span>Lupa kata sandi atau kunci akses? Hubungi admin web.</span></p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, badge, csrf %}
+{% block title %}Kelola presensi{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Kelola presensi kelas</h1>
+    <p>{{ d|tgl }} · {{ stats.tercatat }} dari {{ stats.total }} siswa tercatat (Hadir: {{ stats.counts['H'] }}, Izin: {{ stats.counts['I'] }}, Sakit: {{ stats.counts['S'] }}, Alpa: {{ stats.counts['A'] }})</p>
+  </div>
+  {% if not is_future and stats.total > 0 %}
+  <div class="actions">
+    <form class="inline" method="post" action="{{ url_for('admin.mark_all_present') }}">
+      {{ csrf() }}<input type="hidden" name="tanggal" value="{{ d.isoformat() }}">
+      <button class="btn btn-primary" type="submit" {% if stats.belum == 0 %}disabled{% endif %}>
+        {{ icon('check-circle', 16) }}Tandai Semua Hadir{% if stats.belum %} ({{ stats.belum }} siswa){% else %} (Selesai){% endif %}
+      </button>
+    </form>
+    {% if stats.belum > 0 %}
+    <form class="inline" method="post" action="{{ url_for('admin.mark_alpa') }}"
+          data-confirm="Tandai {{ stats.belum }} siswa yang belum tercatat pada {{ d|tgl }} sebagai Alpa?" data-confirm-label="Tandai Alpa">
+      {{ csrf() }}<input type="hidden" name="tanggal" value="{{ d.isoformat() }}">
+      <button class="btn btn-danger-outline" type="submit">{{ icon('x-circle', 16) }}Tandai Sisa ({{ stats.belum }}) Alpa</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{% if not is_future %}
+<div class="alert alert-info mb-1">
+  {{ icon('info', 18) }}
+  <span><strong>Cara cepat absen harian:</strong> Tekan tombol <strong>Tandai Semua Hadir</strong> di kanan atas, lalu ubah pilihan status pada baris siswa yang <strong>Izin</strong>, <strong>Sakit</strong>, atau <strong>Alpa</strong> di tabel bawah dan klik <strong>Simpan</strong>.</span>
+</div>
+{% else %}
+<div class="alert alert-warn mb-1">{{ icon('alert', 18) }}<span>Tanggal ini berada di masa depan, sehingga presensi belum dapat diisi.</span></div>
+{% endif %}
+
+<form class="toolbar" method="get" action="{{ url_for('admin.attendance_list') }}" role="search">
+  <div class="field"><label for="tanggal">Tanggal</label><input class="input" id="tanggal" type="date" name="tanggal" value="{{ d.isoformat() }}"></div>
+  <div class="field grow"><label for="q">Nama siswa</label><input class="input" id="q" type="search" name="q" value="{{ q }}" maxlength="100" placeholder="Cari nama siswa"></div>
+  <div class="field"><label for="status">Filter status</label>
+    <select class="select" id="status" name="status">
+      <option value="">Semua status ({{ stats.total }})</option>
+      {% for k in STATUS_ORDER %}<option value="{{ k }}" {% if status == k %}selected{% endif %}>{{ STATUS_LABELS[k] }} ({{ stats.counts[k] }})</option>{% endfor %}
+      <option value="belum" {% if status == 'belum' %}selected{% endif %}>Belum tercatat ({{ stats.belum }})</option>
+    </select></div>
+  <button class="btn btn-secondary" type="submit">{{ icon('search', 16) }}Terapkan</button>
+  {% if q or status %}<a class="btn btn-secondary" href="{{ url_for('admin.attendance_list', tanggal=d.isoformat()) }}">Reset</a>{% endif %}
+</form>
+
+{% if rows %}
+<div class="table-wrap">
+<table class="table table-stack">
+  <thead>
+    <tr>
+      <th class="col-num">No</th>
+      <th>Nama lengkap</th>
+      <th>Status saat ini</th>
+      <th>Waktu &amp; Pencatat</th>
+      <th>Ubah Status &amp; Keterangan (Siswa Tidak Masuk / Edit)</th>
+      <th>Riwayat</th>
+    </tr>
+  </thead>
+  <tbody>{% for r in rows %}
+  <tr>
+    <td class="col-num" data-label="No. absen">{{ r['roll_no'] or '-' }}</td>
+    <td data-label="Nama">
+      <a href="{{ url_for('admin.student_detail', student_id=r['student_id']) }}"><strong>{{ r['full_name'] }}</strong></a>
+      {% if not r['is_active'] %}<span class="tag">nonaktif</span>{% endif %}
+    </td>
+    <td data-label="Status">
+      {{ badge(r['status']) }}
+      {% if r['corrected'] %}<span class="tag">diubah</span>{% endif %}
+    </td>
+    <td data-label="Waktu">
+      {% if r['submitted_at'] %}
+        {{ r['submitted_at']|jam }} WIB
+        {% if r['by_name'] %}<span class="tag">{{ r['by_name'] }}</span>{% endif %}
+      {% else %}-{% endif %}
+    </td>
+    <td data-label="Ubah cepat">
+      {% if not is_future %}
+      <form class="quick-form" method="post" action="{{ url_for('admin.quick_update') }}">
+        {{ csrf() }}
+        <input type="hidden" name="siswa" value="{{ r['student_id'] }}">
+        <input type="hidden" name="tanggal" value="{{ d.isoformat() }}">
+        <input type="hidden" name="q" value="{{ q }}">
+        <input type="hidden" name="filter_status" value="{{ status }}">
+        <select class="select select-sm" name="status" aria-label="Status {{ r['full_name'] }}">
+          {% set current_st = r['status'] or 'H' %}
+          {% for k in STATUS_ORDER %}
+          <option value="{{ k }}" {% if current_st == k %}selected{% endif %}>{{ STATUS_LABELS[k] }}</option>
+          {% endfor %}
+        </select>
+        <input class="input input-sm" type="text" name="note" value="{{ r['note'] or '' }}" maxlength="200"
+               placeholder="Keterangan (mis. Sakit / Izin)" aria-label="Keterangan {{ r['full_name'] }}">
+        <button class="btn btn-primary btn-sm" type="submit">{{ icon('check', 14) }}Simpan</button>
+      </form>
+      {% else %}
+      <span class="muted small">{{ r['note'] or '-' }}</span>
+      {% endif %}
+    </td>
+    <td class="cell-actions" data-label="Riwayat">
+      {% if not is_future %}
+      <a class="btn btn-secondary btn-sm" href="{{ url_for('admin.correct', siswa=r['student_id'], tanggal=d.isoformat()) }}">{{ icon('edit', 14) }}Detail</a>
+      {% endif %}
+    </td>
+  </tr>{% endfor %}</tbody>
+</table></div>
+{% else %}
+<div class="card"><div class="empty"><strong>Tidak ada data yang cocok</strong>Ubah tanggal atau filter pencarian, atau pastikan daftar siswa sudah diimpor.</div></div>
+{% endif %}
+{% endblock %}

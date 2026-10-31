@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, stat, week_nav %}
+{% block title %}Laporan mingguan{% endblock %}
+{% block content %}
+<div class="print-only print-head"><h1>Rekap presensi mingguan — Kelas {{ klass.name }}</h1>
+  <div>{{ klass.school_name }}{% if klass.academic_year %} · TA {{ klass.academic_year }}{% endif %} · Minggu {{ label }} · dicetak {{ printed_at|waktu }}</div></div>
+
+<div class="page-head no-print"><div><h1>Laporan presensi</h1><p>Ringkasan dan rekap presensi harian, mingguan, atau bulanan.</p></div></div>
+<nav class="tabs no-print" aria-label="Jenis laporan">
+  <a href="{{ url_for('admin.report_daily', tanggal=minggu) }}">Harian</a>
+  <a href="{{ url_for('admin.report_weekly', minggu=minggu) }}" aria-current="page">Mingguan</a>
+  <a href="{{ url_for('admin.report_monthly', bulan=minggu[:7]) }}">Bulanan</a>
+</nav>
+
+<div class="toolbar no-print">
+  {{ week_nav(prev, next, label, 'admin.report_weekly') }}
+  <form class="date-form" method="get" action="{{ url_for('admin.report_weekly') }}">
+    <label class="sr-only" for="minggu">Pilih tanggal dalam minggu</label>
+    <input class="input" id="minggu" type="date" name="minggu" value="{{ minggu }}" aria-label="Pilih tanggal dalam minggu">
+    <button class="btn btn-secondary" type="submit">Pilih Minggu</button>
+  </form>
+  <div class="actions ml-auto">
+    <a class="btn btn-secondary" href="{{ url_for('admin.report_weekly', minggu=minggu, unduh='csv') }}">{{ icon('download', 16) }}CSV</a>
+    <a class="btn btn-secondary" href="{{ url_for('admin.report_weekly', minggu=minggu, unduh='xlsx') }}">{{ icon('download', 16) }}Excel</a>
+    <button class="btn btn-secondary" type="button" data-print>{{ icon('printer', 16) }}Cetak</button>
+  </div>
+</div>
+
+<h2 class="mb-075">Minggu {{ label }}</h2>
+<dl class="stats six">
+  {{ stat('Hari efektif', report.days|length, 't', 'hari dengan catatan presensi') }}
+  {{ stat('Hadir', report.totals['H'], 'h', (report.class_pct ~ '% rata-rata kelas') if report.class_pct is not none else None) }}
+  {{ stat('Izin', report.totals['I'], 'i') }}
+  {{ stat('Sakit', report.totals['S'], 's') }}
+  {{ stat('Alpa', report.totals['A'], 'a') }}
+  {{ stat('Belum tercatat', report.belum_total, 'n') }}
+</dl>
+
+{% if report.rows %}
+<h3 class="sec-title">Rekap mingguan &amp; rincian per hari</h3>
+<p class="muted small no-print">H = Hadir, I = Izin, S = Sakit, A = Alpa, titik (·) = belum tercatat pada hari tersebut.</p>
+<div class="table-wrap">
+<table class="table table-stack">
+  <thead>
+    <tr>
+      <th class="col-num">No</th>
+      <th>Nama lengkap</th>
+      {% for dt in report.week_days %}
+      <th class="center" title="{{ dt|tgl }}">{{ dt|hari_bulan }}</th>
+      {% endfor %}
+      <th>Hadir</th>
+      <th>Izin</th>
+      <th>Sakit</th>
+      <th>Alpa</th>
+      <th>Belum</th>
+      <th>% Hadir</th>
+    </tr>
+  </thead>
+  <tbody>{% for r in report.rows %}
+  <tr>
+    <td class="col-num" data-label="No. absen">{{ r.roll_no or '-' }}</td>
+    <td data-label="Nama"><a href="{{ url_for('admin.student_detail', student_id=r.student_id, bulan=minggu[:7]) }}"><strong>{{ r.full_name }}</strong></a></td>
+    {% for dt in report.week_days %}
+    {% set c = r.cells.get(dt) %}
+    <td data-label="{{ dt|hari_bulan }}" class="center {{ 'cell-' ~ c|lower if c else 'muted' }}">{{ c or '·' }}</td>
+    {% endfor %}
+    <td data-label="Hadir" class="num cell-h">{{ r.counts['H'] }}</td>
+    <td data-label="Izin" class="num cell-i">{{ r.counts['I'] }}</td>
+    <td data-label="Sakit" class="num cell-s">{{ r.counts['S'] }}</td>
+    <td data-label="Alpa" class="num cell-a">{{ r.counts['A'] }}</td>
+    <td data-label="Belum" class="num">{{ r.belum }}</td>
+    <td data-label="% Hadir" class="num"><strong>{{ (r.pct ~ '%') if r.pct is not none else '-' }}</strong></td>
+  </tr>{% endfor %}</tbody>
+</table></div>
+{% else %}
+<div class="card"><div class="empty"><strong>Belum ada siswa terdaftar</strong>Tambahkan atau impor daftar siswa terlebih dahulu.</div></div>
+{% endif %}
+{% endblock %}

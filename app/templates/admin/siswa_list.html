@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, csrf %}
+{% block title %}Data siswa{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Data siswa kelas</h1><p>{{ counts.total }} siswa · {{ counts.aktif }} aktif · {{ counts.nonaktif }} nonaktif</p></div>
+  <div class="actions"><a class="btn btn-primary" href="{{ url_for('admin.student_new') }}">{{ icon('plus', 18) }}Tambah siswa</a></div>
+</div>
+
+<form class="toolbar" method="get" action="{{ url_for('admin.students') }}" role="search">
+  <div class="field grow"><label for="q">Cari nama</label><input class="input" id="q" name="q" type="search" value="{{ q }}" maxlength="100" placeholder="Ketik sebagian nama"></div>
+  <div class="field"><label for="status">Status siswa</label>
+    <select class="select" id="status" name="status">
+      {% for v, l in (('semua','Semua'),('aktif','Aktif'),('nonaktif','Nonaktif')) %}<option value="{{ v }}" {% if status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+    </select></div>
+  <button class="btn btn-primary" type="submit">{{ icon('search', 16) }}Cari</button>
+  {% if q or status != 'semua' %}<a class="btn btn-secondary" href="{{ url_for('admin.students') }}">Reset</a>{% endif %}
+</form>
+
+{% if rows %}
+<div class="table-wrap">
+<table class="table table-stack">
+  <thead><tr><th class="col-num">No</th><th>Nama lengkap</th><th>NIS</th><th>Status</th><th>Aksi</th></tr></thead>
+  <tbody>
+  {% for s in rows %}
+  <tr>
+    <td class="col-num" data-label="No. absen">{{ s['roll_no'] or '-' }}</td>
+    <td data-label="Nama"><a href="{{ url_for('admin.student_detail', student_id=s['id']) }}"><strong>{{ s['full_name'] }}</strong></a></td>
+    <td data-label="NIS">{{ s['nis'] or '-' }}</td>
+    <td data-label="Status"><span class="badge {{ 'badge-ok' if s['is_active'] else 'badge-neutral' }}">{{ 'Aktif' if s['is_active'] else 'Nonaktif' }}</span></td>
+    <td class="cell-actions">
+      <a class="btn btn-secondary btn-sm" href="{{ url_for('admin.student_detail', student_id=s['id']) }}">{{ icon('list', 14) }}Riwayat</a>
+      <a class="btn btn-secondary btn-sm" href="{{ url_for('admin.student_edit', student_id=s['id']) }}">{{ icon('edit', 14) }}Edit</a>
+      <form class="inline" method="post" action="{{ url_for('admin.student_toggle', student_id=s['id']) }}"
+            data-confirm="{{ ('Nonaktifkan data ' ~ s['full_name'] ~ '? Riwayat presensinya tetap tersimpan.') if s['is_active'] else ('Aktifkan kembali ' ~ s['full_name'] ~ '?') }}"
+            data-confirm-label="{{ 'Nonaktifkan' if s['is_active'] else 'Aktifkan' }}">
+        {{ csrf() }}<input type="hidden" name="aktif" value="{{ 0 if s['is_active'] else 1 }}">
+        <button class="btn {{ 'btn-danger-outline' if s['is_active'] else 'btn-secondary' }} btn-sm" type="submit">{{ icon('ban', 14) }}{{ 'Nonaktifkan' if s['is_active'] else 'Aktifkan' }}</button></form>
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<div class="card"><div class="empty"><strong>{% if q or status != 'semua' %}Tidak ada siswa yang cocok{% else %}Belum ada siswa terdaftar{% endif %}</strong>
+  {% if q or status != 'semua' %}Ubah kata kunci atau filter pencarian.{% else %}Tambahkan siswa satu per satu atau impor daftar kelas melalui <code>manage.py import-students</code>.{% endif %}</div></div>
+{% endif %}
+{% endblock %}

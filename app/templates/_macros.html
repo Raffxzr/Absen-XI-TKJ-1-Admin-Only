@@ -1,0 +1,54 @@
+{% macro icon(name, size=18) -%}
+<svg class="icon" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">{{ ICONS[name]|safe }}</svg>
+{%- endmacro %}
+
+{% macro csrf() -%}
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+{%- endmacro %}
+
+{# Lencana status: selalu berisi teks, tidak hanya warna #}
+{% macro badge(code) -%}
+{%- if code -%}<span class="badge badge-{{ code|lower }}">{{ STATUS_LABELS[code] }}</span>
+{%- else -%}<span class="badge badge-belum">Belum presensi</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro field(name, label, value='', error=None, type='text', required=False, help=None, autocomplete=None, maxlength=None, inputmode=None, autofocus=False) %}
+<div class="field{% if error %} has-error{% endif %}">
+  <label for="f-{{ name }}">{{ label }}{% if required %} <span class="req" title="wajib diisi">*</span>{% endif %}</label>
+  <div class="input-wrap">
+    <input class="input" id="f-{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ value if value is not none else '' }}"
+      {%- if required %} required{% endif %}{% if autocomplete %} autocomplete="{{ autocomplete }}"{% endif %}
+      {%- if maxlength %} maxlength="{{ maxlength }}"{% endif %}{% if inputmode %} inputmode="{{ inputmode }}"{% endif %}
+      {%- if autofocus %} autofocus{% endif %}
+      {%- if error or help %} aria-describedby="{% if help %}h-{{ name }}{% endif %}{% if help and error %} {% endif %}{% if error %}e-{{ name }}{% endif %}"{% endif %}
+      {%- if error %} aria-invalid="true"{% endif %}>
+    {% if type == 'password' %}
+    <button type="button" class="input-toggle" data-toggle-password="f-{{ name }}" aria-label="Tampilkan kata sandi" aria-pressed="false">{{ icon('eye', 18) }}</button>
+    {% endif %}
+  </div>
+  {% if help %}<p class="help" id="h-{{ name }}">{{ help }}</p>{% endif %}
+  {% if error %}<p class="error-text" id="e-{{ name }}">{{ icon('alert', 14) }}<span>{{ error }}</span></p>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro stat(label, value, tone='', sub=None) %}
+<div class="stat {{ tone }}"><dt>{{ label }}</dt><dd>{{ value }}</dd>{% if sub %}<p class="stat-sub">{{ sub }}</p>{% endif %}</div>
+{% endmacro %}
+
+{% macro week_nav(prev, next, label, base_endpoint, extra={}) %}
+<nav class="month-nav" aria-label="Pilih minggu">
+  <a class="btn btn-secondary btn-icon" href="{{ url_for(base_endpoint, minggu=prev, **extra) }}" aria-label="Minggu sebelumnya">{{ icon('chevron-left') }}</a>
+  <strong>{{ label }}</strong>
+  {% if next %}<a class="btn btn-secondary btn-icon" href="{{ url_for(base_endpoint, minggu=next, **extra) }}" aria-label="Minggu berikutnya">{{ icon('chevron-right') }}</a>
+  {% else %}<span class="btn btn-secondary btn-icon is-disabled" aria-hidden="true">{{ icon('chevron-right') }}</span>{% endif %}
+</nav>
+{% endmacro %}
+
+{% macro month_nav(prev, next, label, base_endpoint, extra={}) %}
+<nav class="month-nav" aria-label="Pilih bulan">
+  <a class="btn btn-secondary btn-icon" href="{{ url_for(base_endpoint, bulan=prev, **extra) }}" aria-label="Bulan sebelumnya">{{ icon('chevron-left') }}</a>
+  <strong>{{ label }}</strong>
+  {% if next %}<a class="btn btn-secondary btn-icon" href="{{ url_for(base_endpoint, bulan=next, **extra) }}" aria-label="Bulan berikutnya">{{ icon('chevron-right') }}</a>
+  {% else %}<span class="btn btn-secondary btn-icon is-disabled" aria-hidden="true">{{ icon('chevron-right') }}</span>{% endif %}
+</nav>
+{% endmacro %}

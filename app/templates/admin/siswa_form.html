@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, csrf, field %}
+{% block title %}{{ 'Tambah siswa' if mode == 'baru' else 'Edit siswa' }}{% endblock %}
+{% block main_class %}container narrow{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ 'Tambah siswa' if mode == 'baru' else 'Edit data siswa' }}</h1><p>Kelas {{ klass.name }}</p></div></div>
+<form class="card" method="post" action="{{ url_for('admin.student_new') if mode == 'baru' else url_for('admin.student_edit', student_id=student['id']) }}">
+  {{ csrf() }}
+  {{ field('full_name', 'Nama lengkap', form.full_name, errors.full_name, required=True, maxlength=100, autofocus=True,
+           help='Nama harus unik di dalam kelas.') }}
+  {{ field('roll_no', 'Nomor absen', form.roll_no, errors.roll_no, maxlength=3, inputmode='numeric', help='Kosongkan untuk memakai nomor urut berikutnya.') }}
+  {{ field('nis', 'NIS (opsional)', form.nis, errors.nis, maxlength=20, help='Nomor Induk Siswa bila diperlukan.') }}
+  <div class="form-actions">
+    <button class="btn btn-primary" type="submit">{{ 'Simpan siswa' if mode == 'baru' else 'Simpan perubahan' }}</button>
+    <a class="btn btn-secondary" href="{{ url_for('admin.students') if mode == 'baru' else url_for('admin.student_detail', student_id=student['id']) }}">Batal</a>
+  </div>
+</form>
+{% endblock %}

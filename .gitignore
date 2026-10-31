@@ -1,0 +1,11 @@
+.env
+instance/
+*.db
+*.sqlite3
+__pycache__/
+*.pyc
+.venv/
+venv/
+data/*.md
+data/*.txt
+kredensial_*.csv

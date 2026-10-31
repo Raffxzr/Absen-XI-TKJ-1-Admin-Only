@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, badge, csrf %}
+{% block title %}Detail &amp; Koreksi Presensi{% endblock %}
+{% block main_class %}container narrow{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ 'Koreksi presensi' if record else 'Catat presensi' }}</h1><p>{{ student['full_name'] }} · {{ d|tgl }}</p></div></div>
+{% if error %}<div class="alert alert-error mb-1" role="alert">{{ icon('alert', 18) }}<span>{{ error }}</span></div>{% endif %}
+
+<div class="card">
+  <dl class="kv">
+    <dt>Status saat ini</dt><dd>{{ badge(record['status'] if record else None) }}</dd>
+    {% if record %}<dt>Dicatat</dt><dd>{{ record['submitted_at']|waktu }}</dd>
+    <dt>Keterangan</dt><dd>{{ record['note'] or '-' }}</dd>{% endif %}
+  </dl>
+</div>
+
+<form class="card" method="post" action="{{ url_for('admin.correct') }}">
+  {{ csrf() }}
+  <input type="hidden" name="siswa" value="{{ student['id'] }}"><input type="hidden" name="tanggal" value="{{ d.isoformat() }}">
+  <div class="field"><label for="f-status">Status baru <span class="req">*</span></label>
+    <select class="select" id="f-status" name="status" required>
+      <option value="" disabled {% if not form.status %}selected{% endif %}>Pilih status</option>
+      {% for k in STATUS_ORDER %}<option value="{{ k }}" {% if form.status == k %}selected{% endif %}>{{ STATUS_LABELS[k] }}</option>{% endfor %}
+    </select></div>
+  <div class="field"><label for="f-note">Keterangan (opsional)</label><input class="input" id="f-note" name="note" value="{{ form.note }}" maxlength="200"></div>
+  <div class="field"><label for="f-reason">Alasan perubahan <span class="req">*</span></label>
+    <textarea class="textarea" id="f-reason" name="reason" required minlength="3" maxlength="300" rows="3" aria-describedby="h-reason">{{ form.reason }}</textarea>
+    <p class="help" id="h-reason">Minimal 3 karakter. Alasan, nama akun admin Anda, dan waktu perubahan tersimpan di riwayat.</p></div>
+  <div class="form-actions"><button class="btn btn-primary" type="submit">Simpan perubahan</button>
+    <a class="btn btn-secondary" href="{{ url_for('admin.attendance_list', tanggal=d.isoformat()) }}">Kembali ke daftar presensi</a></div>
+</form>
+
+{% if history %}
+<section class="card"><h2>Riwayat perubahan tanggal ini</h2>
+  <ul class="history-list">{% for c in history %}
+    <li><span class="when">{{ STATUS_LABELS[c['old_status']] if c['old_status'] else 'Belum ada' }} → {{ STATUS_LABELS[c['new_status']] }}</span><span class="muted small">{{ c['corrected_at']|waktu }}</span>
+      <span class="meta">Oleh {{ c['by_name'] }} · alasan: {{ c['reason'] }}</span></li>{% endfor %}</ul></section>
+{% endif %}
+{% endblock %}

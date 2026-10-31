@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, stat, month_nav %}
+{% block title %}Laporan bulanan{% endblock %}
+{% block content %}
+<div class="print-only print-head"><h1>Rekap presensi bulanan — Kelas {{ klass.name }}</h1>
+  <div>{{ klass.school_name }}{% if klass.academic_year %} · TA {{ klass.academic_year }}{% endif %} · {{ label }} · dicetak {{ printed_at|waktu }}</div></div>
+
+<div class="page-head no-print"><div><h1>Laporan presensi</h1><p>Ringkasan dan rekap presensi harian, mingguan, atau bulanan.</p></div></div>
+<nav class="tabs no-print" aria-label="Jenis laporan">
+  <a href="{{ url_for('admin.report_daily') }}">Harian</a>
+  <a href="{{ url_for('admin.report_weekly') }}">Mingguan</a>
+  <a href="{{ url_for('admin.report_monthly', bulan=bulan) }}" aria-current="page">Bulanan</a>
+</nav>
+
+<div class="toolbar no-print">
+  {{ month_nav(prev, next, label, 'admin.report_monthly') }}
+  <div class="actions ml-auto">
+    <a class="btn btn-secondary" href="{{ url_for('admin.report_monthly', bulan=bulan, unduh='csv') }}">{{ icon('download', 16) }}CSV</a>
+    <a class="btn btn-secondary" href="{{ url_for('admin.report_monthly', bulan=bulan, unduh='xlsx') }}">{{ icon('download', 16) }}Excel</a>
+    <button class="btn btn-secondary" type="button" data-print>{{ icon('printer', 16) }}Cetak</button>
+  </div>
+</div>
+
+<h2 class="mb-075">{{ label }}</h2>
+<dl class="stats six">
+  {{ stat('Hari efektif', report.days|length, 't', 'hari dengan catatan presensi') }}
+  {{ stat('Hadir', report.totals['H'], 'h', (report.class_pct ~ '% rata-rata kelas') if report.class_pct is not none else None) }}
+  {{ stat('Izin', report.totals['I'], 'i') }}
+  {{ stat('Sakit', report.totals['S'], 's') }}
+  {{ stat('Alpa', report.totals['A'], 'a') }}
+  {{ stat('Belum tercatat', report.belum_total, 'n') }}
+</dl>
+
+{% if report.rows and report.days %}
+<h3 class="sec-title">Ringkasan per siswa</h3>
+<div class="table-wrap">
+<table class="table table-stack">
+  <thead><tr><th class="col-num">No</th><th>Nama lengkap</th><th>Hadir</th><th>Izin</th><th>Sakit</th><th>Alpa</th><th>Belum</th><th>% Hadir</th></tr></thead>
+  <tbody>{% for r in report.rows %}
+  <tr><td class="col-num" data-label="No. absen">{{ r.roll_no or '-' }}</td>
+    <td data-label="Nama"><a href="{{ url_for('admin.student_detail', student_id=r.student_id, bulan=bulan) }}">{{ r.full_name }}</a></td>
+    <td data-label="Hadir" class="num cell-h">{{ r.counts['H'] }}</td><td data-label="Izin" class="num cell-i">{{ r.counts['I'] }}</td>
+    <td data-label="Sakit" class="num cell-s">{{ r.counts['S'] }}</td><td data-label="Alpa" class="num cell-a">{{ r.counts['A'] }}</td>
+    <td data-label="Belum" class="num">{{ r.belum }}</td><td data-label="% Hadir" class="num"><strong>{{ (r.pct ~ '%') if r.pct is not none else '-' }}</strong></td></tr>{% endfor %}</tbody>
+</table></div>
+
+<h3 class="page-break sec-title-lg">Presensi per tanggal</h3>
+<p class="muted small no-print">H = Hadir, I = Izin, S = Sakit, A = Alpa, titik = belum tercatat. Geser ke samping untuk melihat seluruh tanggal.</p>
+<div class="table-wrap">
+<table class="table compact">
+  <thead><tr><th class="name">Nama</th>{% for dt in report.days %}<th title="{{ dt|tgl }}">{{ dt[8:10] }}</th>{% endfor %}</tr></thead>
+  <tbody>{% for r in report.rows %}
+  <tr><td class="name">{{ r.full_name }}</td>{% for dt in report.days %}{% set c = r.cells.get(dt) %}<td class="{{ 'cell-' ~ c|lower if c else '' }}">{{ c or '·' }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+</table></div>
+{% else %}
+<div class="card"><div class="empty"><strong>Belum ada data presensi di {{ label }}</strong>Rekap akan terisi setelah pengurus kelas mencatat presensi.</div></div>
+{% endif %}
+{% endblock %}

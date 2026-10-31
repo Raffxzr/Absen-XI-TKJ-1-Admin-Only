@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, badge, stat, csrf %}
+{% block title %}Ringkasan{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Ringkasan presensi</h1><p>{{ d|tgl }}{% if is_today %} · hari ini{% endif %}</p></div>
+  <form class="date-form" method="get" action="{{ url_for('admin.overview') }}">
+    <a class="btn btn-secondary btn-icon" href="{{ url_for('admin.overview', tanggal=prev_day.isoformat()) }}" aria-label="Hari sebelumnya">{{ icon('chevron-left') }}</a>
+    <label class="sr sr-only" for="tanggal">Tanggal</label>
+    <input class="input" type="date" id="tanggal" name="tanggal" value="{{ d.isoformat() }}">
+    <a class="btn btn-secondary btn-icon" href="{{ url_for('admin.overview', tanggal=next_day.isoformat()) }}" aria-label="Hari berikutnya">{{ icon('chevron-right') }}</a>
+    <button class="btn btn-primary" type="submit">Tampilkan</button>
+  </form>
+</div>
+
+{% if is_today and window.state != 'unset' %}
+<div class="alert {{ 'alert-info' if window.state == 'open' else 'alert-warn' }} mb-1">
+  {{ icon('clock', 18) }}<span>{{ window.message }}</span>
+</div>
+{% endif %}
+
+<dl class="stats six">
+  {{ stat('Siswa terdaftar', students.total, 't', students.aktif ~ ' aktif · ' ~ students.nonaktif ~ ' nonaktif') }}
+  {{ stat('Hadir', stats.counts['H'], 'h', (stats.pct ~ '% dari ' ~ stats.total ~ ' siswa') if stats.pct is not none else None) }}
+  {{ stat('Izin', stats.counts['I'], 'i') }}
+  {{ stat('Sakit', stats.counts['S'], 's') }}
+  {{ stat('Alpa', stats.counts['A'], 'a') }}
+  {{ stat('Belum presensi', stats.belum, 'n') }}
+</dl>
+
+<section class="card" aria-labelledby="aksi-cepat-h">
+  <div class="card-head">
+    <div>
+      <h2 id="aksi-cepat-h">Pencatatan cepat pengurus kelas</h2>
+      <p class="muted small m-0">Klik tombol di bawah untuk menandai seluruh siswa hadir sekaligus, lalu ubah status bagi siswa yang tidak masuk.</p>
+    </div>
+    <div class="actions">
+      {% if not is_future and stats.belum > 0 %}
+      <form class="inline" method="post" action="{{ url_for('admin.mark_all_present') }}">
+        {{ csrf() }}<input type="hidden" name="tanggal" value="{{ d.isoformat() }}">
+        <button class="btn btn-primary" type="submit">{{ icon('check-circle', 16) }}Tandai Semua Hadir ({{ stats.belum }} siswa)</button>
+      </form>
+      {% endif %}
+      <a class="btn btn-secondary" href="{{ url_for('admin.attendance_list', tanggal=d.isoformat()) }}">{{ icon('list', 16) }}Kelola &amp; Edit Presensi</a>
+      <a class="btn btn-secondary" href="{{ url_for('admin.report_weekly', minggu=d.isoformat()) }}">{{ icon('calendar', 16) }}Rekap Mingguan</a>
+    </div>
+  </div>
+</section>
+
+<section class="card" aria-labelledby="belum-h">
+  <div class="card-head">
+    <h2 id="belum-h">Belum tercatat ({{ stats.belum }})</h2>
+    <a class="btn btn-secondary btn-sm" href="{{ url_for('admin.attendance_list', tanggal=d.isoformat()) }}">{{ icon('edit', 16) }}Buka tabel presensi</a>
+  </div>
+  {% set pending = rows|selectattr('status', 'none')|list %}
+  {% if pending %}
+  <ul class="chips">
+    {% for r in pending %}<li><a href="{{ url_for('admin.attendance_list', tanggal=d.isoformat(), q=r['full_name']) }}" title="Catat presensi untuk {{ r['full_name'] }}">{{ r['roll_no'] ~ '. ' if r['roll_no'] else '' }}{{ r['full_name'] }}</a></li>{% endfor %}
+  </ul>
+  <p class="help mt-075">Gunakan tombol <strong>Tandai Semua Hadir</strong> di atas untuk mengisi hadir seluruh siswa sekaligus, lalu ubah status siswa yang Izin, Sakit, atau Alpa.</p>
+  {% elif stats.total == 0 %}
+  <div class="empty"><strong>Belum ada siswa terdaftar</strong><a href="{{ url_for('admin.student_new') }}">Tambah siswa</a> atau impor daftar kelas dengan <code>manage.py import-students</code>.</div>
+  {% else %}
+  <div class="empty"><strong>Semua siswa sudah tercatat</strong>Buka menu <a href="{{ url_for('admin.attendance_list', tanggal=d.isoformat()) }}">Presensi</a> bila ada siswa yang perlu diubah statusnya (Izin, Sakit, atau Alpa).</div>
+  {% endif %}
+</section>
+{% endblock %}

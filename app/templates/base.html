@@ -1,0 +1,79 @@
+{% from "_macros.html" import icon %}
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>{% block title %}Absensi{% endblock %} · Absensi {{ klass.name if klass else 'Kelas' }}</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/logo-kelas.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+<a class="skip-link" href="#main">Lewati ke konten utama</a>
+
+{% if current_user %}
+{% set ep = request.endpoint or '' %}
+<header class="app-header">
+  <div class="header-inner">
+    <a class="brand" href="{{ url_for('auth.index') }}">
+      <img class="brand-logo" src="{{ url_for('static', filename='img/logo-kelas.png') }}" alt="Logo Kelas {{ klass.name if klass else 'XI TKJ 1' }}" width="40" height="40">
+      <span class="brand-text"><strong>Absensi {{ klass.name if klass else '' }}</strong><small>{{ klass.school_name if klass else '' }}</small></span>
+    </a>
+    <nav class="main-nav" aria-label="Menu utama">
+      <a href="{{ url_for('admin.overview') }}" {% if ep == 'admin.overview' %}aria-current="page"{% endif %}>Ringkasan</a>
+      <a href="{{ url_for('admin.attendance_list') }}" {% if ep in ('admin.attendance_list', 'admin.correct') %}aria-current="page"{% endif %}>Presensi</a>
+      <a href="{{ url_for('admin.students') }}" {% if ep.startswith('admin.student') %}aria-current="page"{% endif %}>Siswa</a>
+      <a href="{{ url_for('admin.report_daily') }}" {% if ep.startswith('admin.report') %}aria-current="page"{% endif %}>Laporan</a>
+      <a href="{{ url_for('admin.settings') }}" {% if ep == 'admin.settings' %}aria-current="page"{% endif %}>Pengaturan</a>
+    </nav>
+    <div class="user-menu">
+      <span class="user-name">{{ current_user['full_name'] }}<small>Admin Kelas</small></span>
+      <button class="btn btn-ghost btn-sm theme-toggle" type="button" data-theme-toggle aria-label="Ganti ke tema gelap" aria-pressed="false" title="Ganti tema gelap/terang">
+        <span class="theme-icon-moon">{{ icon('moon', 16) }}</span>
+        <span class="theme-icon-sun">{{ icon('sun', 16) }}</span>
+        <span class="hide-sm" data-theme-label>Gelap</span>
+      </button>
+      <a class="btn btn-ghost btn-sm" href="{{ url_for('account.password') }}">{{ icon('key', 16) }}<span class="hide-sm">Kata sandi</span></a>
+      <form method="post" action="{{ url_for('auth.logout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-ghost btn-sm" type="submit">{{ icon('log-out', 16) }}<span>Keluar</span></button>
+      </form>
+    </div>
+  </div>
+</header>
+{% endif %}
+
+<main id="main" class="{% block main_class %}container{% endblock %}">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flashes" role="status">
+      {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ icon('check-circle' if category == 'success' else ('alert' if category == 'error' else 'info'), 18) }}<span>{{ message }}</span></div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="app-footer">
+  <span>{{ klass.school_name if klass else '' }} · Kelas {{ klass.name if klass else '' }}</span>
+  <span>Portal Admin Kelas (Ketua Kelas &amp; Sekretaris) · Zona waktu: WIB (UTC+7)</span>
+</footer>
+
+<dialog id="confirm-dialog" aria-labelledby="confirm-title">
+  <form method="dialog" class="dialog-body">
+    <h2 id="confirm-title">Konfirmasi tindakan</h2>
+    <p id="confirm-message"></p>
+    <div class="dialog-actions">
+      <button class="btn btn-secondary" value="cancel" autofocus>Batal</button>
+      <button class="btn btn-danger" value="ok" id="confirm-ok">Lanjutkan</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="{{ url_for('static', filename='js/common.js') }}" defer></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

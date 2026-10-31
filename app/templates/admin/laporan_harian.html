@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, badge, stat %}
+{% block title %}Laporan harian{% endblock %}
+{% block content %}
+<div class="print-only print-head"><h1>Laporan presensi harian — Kelas {{ klass.name }}</h1>
+  <div>{{ klass.school_name }}{% if klass.academic_year %} · TA {{ klass.academic_year }}{% endif %} · {{ d|tgl }} · dicetak {{ printed_at|waktu }}</div></div>
+
+<div class="page-head no-print">
+  <div><h1>Laporan presensi</h1><p>Ringkasan dan rekap presensi harian, mingguan, atau bulanan.</p></div>
+</div>
+<nav class="tabs no-print" aria-label="Jenis laporan">
+  <a href="{{ url_for('admin.report_daily', tanggal=d.isoformat()) }}" aria-current="page">Harian</a>
+  <a href="{{ url_for('admin.report_weekly', minggu=d.isoformat()) }}">Mingguan</a>
+  <a href="{{ url_for('admin.report_monthly', bulan='%d-%02d' % (d.year, d.month)) }}">Bulanan</a>
+</nav>
+
+<div class="toolbar no-print">
+  <form class="date-form" method="get" action="{{ url_for('admin.report_daily') }}">
+    <div class="field minw-0"><label for="tanggal">Tanggal</label><input class="input" id="tanggal" type="date" name="tanggal" value="{{ d.isoformat() }}"></div>
+    <button class="btn btn-primary self-end" type="submit">Tampilkan</button>
+  </form>
+  <div class="actions ml-auto">
+    <a class="btn btn-secondary" href="{{ url_for('admin.report_daily', tanggal=d.isoformat(), unduh='csv') }}">{{ icon('download', 16) }}CSV</a>
+    <a class="btn btn-secondary" href="{{ url_for('admin.report_daily', tanggal=d.isoformat(), unduh='xlsx') }}">{{ icon('download', 16) }}Excel</a>
+    <button class="btn btn-secondary" type="button" data-print>{{ icon('printer', 16) }}Cetak</button>
+  </div>
+</div>
+
+<h2 class="mb-075">{{ d|tgl }}</h2>
+<dl class="stats six">
+  {{ stat('Siswa', stats.total, 't') }}
+  {{ stat('Hadir', stats.counts['H'], 'h', (stats.pct ~ '%') if stats.pct is not none else None) }}
+  {{ stat('Izin', stats.counts['I'], 'i') }}
+  {{ stat('Sakit', stats.counts['S'], 's') }}
+  {{ stat('Alpa', stats.counts['A'], 'a') }}
+  {{ stat('Belum presensi', stats.belum, 'n') }}
+</dl>
+
+{% if rows %}
+<div class="table-wrap">
+<table class="table table-stack">
+  <thead><tr><th class="col-num">No</th><th>Nama lengkap</th><th>Status</th><th>Waktu</th><th>Dicatat oleh</th><th>Keterangan</th></tr></thead>
+  <tbody>{% for r in rows %}
+  <tr><td class="col-num" data-label="No. absen">{{ r['roll_no'] or '-' }}</td><td data-label="Nama"><a href="{{ url_for('admin.student_detail', student_id=r['student_id']) }}">{{ r['full_name'] }}</a></td>
+    <td data-label="Status">{{ badge(r['status']) }}</td>
+    <td data-label="Waktu">{{ (r['submitted_at']|jam ~ ' WIB') if r['submitted_at'] else '-' }}</td>
+    <td data-label="Dicatat oleh">{{ (r['by_name'] or 'Admin') if r['status'] else '-' }}</td>
+    <td data-label="Keterangan">{{ r['note'] or '-' }}</td></tr>{% endfor %}</tbody>
+</table></div>
+{% else %}
+<div class="card"><div class="empty"><strong>Belum ada siswa terdaftar</strong>Tambahkan siswa terlebih dahulu.</div></div>
+{% endif %}
+{% endblock %}

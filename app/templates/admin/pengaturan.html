@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, csrf, field %}
+{% block title %}Pengaturan{% endblock %}
+{% block main_class %}container narrow{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Pengaturan kelas &amp; jadwal</h1><p>Atur tahun ajaran dan jam referensi sesi presensi harian.</p></div></div>
+
+{% if errors %}
+<div class="alert alert-error mb-1" role="alert">{{ icon('alert', 18) }}<div><strong>Pengaturan belum disimpan:</strong><ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div></div>
+{% endif %}
+
+<form method="post" action="{{ url_for('admin.settings') }}">
+  {{ csrf() }}
+  <section class="card" aria-labelledby="kelas">
+    <h2 id="kelas">Informasi kelas</h2>
+    {{ field('academic_year', 'Tahun ajaran (opsional)', year, type='text', maxlength=9, help='Format 2026/2027. Dicetak pada laporan harian, mingguan, dan bulanan bila diisi.') }}
+  </section>
+
+  <section class="card" aria-labelledby="jadwal">
+    <h2 id="jadwal">Jadwal sesi presensi (opsional)</h2>
+    <p class="muted small">Isi jam buka dan jam tutup (WIB) sebagai penanda jadwal sesi di halaman Ringkasan. Pengurus/admin tetap dapat mencatat atau mengedit presensi kapan saja.</p>
+    <table class="sched">
+      <thead><tr><th>Hari</th><th>Buka</th><th>Tutup</th></tr></thead>
+      <tbody>
+      {% for i in range(7) %}
+      <tr><th scope="row">{{ ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'][i] }}</th>
+        <td><input class="input" type="time" id="sched_{{ i }}_open" name="sched_{{ i }}_open" value="{{ s['sched_%d_open' % i] }}" aria-label="Jam buka {{ ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'][i] }}"></td>
+        <td><input class="input" type="time" id="sched_{{ i }}_close" name="sched_{{ i }}_close" value="{{ s['sched_%d_close' % i] }}" aria-label="Jam tutup {{ ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'][i] }}"></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="mt-075 mb-0"><button class="btn btn-secondary btn-sm" type="button" data-copy-monday>Samakan Selasa–Jumat dengan Senin</button></p>
+  </section>
+
+  <div class="form-actions"><button class="btn btn-primary" type="submit">Simpan pengaturan</button></div>
+</form>
+{% endblock %}
