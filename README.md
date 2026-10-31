@@ -26,7 +26,7 @@ Pastikan Anda sudah menginstal:
 
 1. **Clone repositori**
    ```bash
-   # Masuk ke direktori proyek
+   # Masuk ke direktori projek
    cd nama-folder-proyek
    ```
 
