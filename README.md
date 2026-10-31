@@ -61,7 +61,7 @@ Pastikan Anda sudah menginstal:
    ```
    Aplikasi biasanya akan berjalan di `http://127.0.0.1:5000/`.
 
-## 📁 Struktur Proyek Utama
+## 📁 Struktur Projek Utama
 
 *   `app/`: Berisi kode sumber utama aplikasi (routes, services, templates, static, dll).
 *   `data/`: Penyimpanan data statis atau file pendukung (seperti daftar siswa Markdown).
